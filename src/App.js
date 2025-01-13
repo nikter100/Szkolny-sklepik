@@ -11,123 +11,162 @@ import Card from 'react-bootstrap/Card';
 import { Container } from 'react-bootstrap';
 
 // Nawigacja
-function NavB({ setIsAdmin }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (username === 'admin' && password === 'admin') {
-      setIsAdmin(true);
-      alert('Zalogowano jako admin!');
-    } else {
-      alert('Niepoprawne dane logowania!');
-    }
+function NavB({ isAdmin, setIsAdmin }) {
+  const handleLogout = () => {
+    setIsAdmin(false); // Wylogowanie
   };
 
   return (
     <Navbar className="bg-body-tertiary p-3">
       <h2>Sklepik szkolny</h2>
-      <Form className="d-flex ms-auto" onSubmit={handleLogin}>
-        <Row>
-          <Col>
-            <Form.Control
-              type="text"
-              placeholder="Nazwa użytkownika"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </Col>
-          <Col>
-            <Form.Control
-              type="password"
-              placeholder="Hasło"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Col>
-          <Col>
-            <Button variant="primary" type="submit">
-              Zaloguj
-            </Button>
-          </Col>
-        </Row>
+      <Form className="d-flex ms-auto">
+        {isAdmin ? (
+          <Button variant="danger" onClick={handleLogout}>
+            Wyloguj się
+          </Button>
+        ) : (
+          <Row>
+            <Col>
+              <Form.Control type="text" placeholder="Nazwa użytkownika" id="username" />
+            </Col>
+            <Col>
+              <Form.Control type="password" placeholder="Hasło" id="password" />
+            </Col>
+            <Col>
+              <Button
+                variant="primary"
+                type="button"
+                onClick={() => {
+                  const username = document.getElementById('username').value;
+                  const password = document.getElementById('password').value;
+                  if (username === 'admin' && password === 'admin') {
+                    setIsAdmin(true); // Logowanie
+                  } else {
+                    alert('Nieprawidłowe dane logowania!');
+                  }
+                }}
+              >
+                Zaloguj
+              </Button>
+            </Col>
+          </Row>
+        )}
       </Form>
     </Navbar>
   );
 }
 
-// Wyświetlanie produktów
-function Produkty({ produkty, setProdukty, isAdmin }) {
-  // Grupowanie produktów w tablice po 5 elementów
-  const grupyProduktow = [];
-  for (let i = 0; i < produkty.length; i += 5) {
-    grupyProduktow.push(produkty.slice(i, i + 5));
-  }
 
-  // Funkcja do usuwania produktu
-  const usunProdukt = (indexDoUsuniecia) => {
-    setProdukty(produkty.filter((_, index) => index !== indexDoUsuniecia));
+// Wyświetlanie produktów
+function ProductCard({ produkty, setProdukty, isAdmin, zamowienia, setZamowienia }) {
+  // Funkcja do zamawiania produktu
+  const zamowProdukt = (nazwaProduktu) => {
+    const noweZamowienie = { produkt: nazwaProduktu, status: 'Zamówione' };
+    setZamowienia([...zamowienia, noweZamowienie]);
   };
 
   return (
     <Container>
       <h2>Produkty:</h2>
-      {grupyProduktow.map((grupa, indexGrupy) => (
-        <div key={indexGrupy} className="d-flex justify-content-around mb-4">
-          {grupa.map((produkt, indexProduktu) => {
-            const indexGlobalny = indexGrupy * 5 + indexProduktu; // Obliczenie indeksu w oryginalnej tablicy
-            return (
-              <Card key={indexGlobalny} style={{ width: '20%' }} className="mx-3">
-                <Card.Body>
-                  <Card.Title>{produkt.nazwa}</Card.Title>
-                  <Card.Text>{produkt.opis}</Card.Text>
-                  <Card.Text>
-                    <h6>Ilość: {produkt.ilosc}</h6>
-                  </Card.Text>
-                  {isAdmin && (
-                    <Button
-                      variant="danger"
-                      onClick={() => usunProdukt(indexGlobalny)}
-                    >
-                      Usuń produkt
-                    </Button>
-                  )}
-                </Card.Body>
-              </Card>
-            );
-          })}
-        </div>
-      ))}
+      <div className="row">
+        {produkty.map((produkt, index) => (
+          <Card key={index} style={{ width: '20%' }} className="mx-3 mb-4">
+            <Card.Body>
+              <Card.Title>{produkt.nazwa}</Card.Title>
+              <Card.Text>{produkt.opis}</Card.Text>
+              <Card.Text>
+                <strong>Status:</strong>{' '}
+                {produkt.dostepnosc === 1 ? 'Produkt jest dostępny' : 'Produkt jest niedostępny'}
+              </Card.Text>
+              <div>
+                {isAdmin && (
+                  <Form.Check
+                    type="checkbox"
+                    id={`dostepnosc-${index}`}
+                    label="Dostępny"
+                    checked={produkt.dostepnosc === 1}
+                    onChange={() =>
+                      setProdukty(
+                        produkty.map((p, i) =>
+                          i === index ? { ...p, dostepnosc: p.dostepnosc === 1 ? 0 : 1 } : p
+                        )
+                      )
+                    }
+                  />
+                )}
+              </div>
+              <Button
+                variant="success"
+                className="mt-2"
+                onClick={() => zamowProdukt(produkt.nazwa)}
+                disabled={produkt.dostepnosc === 0}
+              >
+                Zamów
+              </Button>
+            </Card.Body>
+          </Card>
+        ))}
+      </div>
     </Container>
   );
 }
 
 // Sekcja Historia
-function Historia() {
+function OrderHistory({ zamowienia, setZamowienia, isAdmin }) {
+  // Funkcja do zmiany statusu zamówienia
+  const zmienStatus = (index, nowyStatus) => {
+    const noweZamowienia = [...zamowienia];
+    noweZamowienia[index].status = nowyStatus;
+    setZamowienia(noweZamowienia);
+  };
+
   return (
-    <div>
-      <h4>Historia zamówień</h4>
-      <p>Historia zamówień będzie dostępna wkrótce.</p>
-    </div>
+    <Container>
+      <h2>Zamówienia:</h2>
+      {zamowienia.length === 0 ? (
+        <p>Brak zamówień.</p>
+      ) : (
+        zamowienia.map((zamowienie, index) => (
+          <Card key={index} className="mb-3">
+            <Card.Body>
+              <Card.Title>{zamowienie.produkt}</Card.Title>
+              <Card.Text>
+                <strong>Status:</strong>{' '}
+                {isAdmin ? (
+                  <Form.Select
+                    value={zamowienie.status}
+                    onChange={(e) => zmienStatus(index, e.target.value)}
+                  >
+                    <option value="Zamówione">Zamówione</option>
+                    <option value="W trakcie realizacji">W trakcie realizacji</option>
+                    <option value="Zrobione">Zrobione</option>
+                  </Form.Select>
+                ) : (
+                  zamowienie.status
+                )}
+              </Card.Text>
+            </Card.Body>
+          </Card>
+        ))
+      )}
+    </Container>
   );
 }
-
 // Panel Admina
-function Admin({ produkty, setProdukty }) {
+function AdminDashboard({ produkty, setProdukty }) {
   const [nazwa, setNazwa] = useState('');
-  const [ilosc, setIlosc] = useState('');
   const [opis, setOpis] = useState('');
+  const [dostepnosc, setDostepnosc] = useState(false);
 
   // Obsługa dodawania produktów
   const dodajProdukt = (e) => {
     e.preventDefault();
-    if (nazwa && ilosc && opis) {
-      const nowyProdukt = { nazwa, ilosc: parseInt(ilosc, 10), opis };
+    if (nazwa && opis) {
+      const nowyProdukt = { nazwa, opis, dostepnosc: dostepnosc ? 1 : 0 };
       setProdukty([...produkty, nowyProdukt]);
       setNazwa('');
-      setIlosc('');
       setOpis('');
+      setDostepnosc(false);
     }
   };
 
@@ -166,17 +205,12 @@ function Admin({ produkty, setProdukty }) {
         </div>
 
         <div className="mb-3">
-          <label htmlFor="iloscProduktu" className="form-label">
-            Ilość
-          </label>
-          <input
-            type="number"
-            className="form-control"
-            id="iloscProduktu"
-            value={ilosc}
-            onChange={(e) => setIlosc(e.target.value)}
-            placeholder="Wprowadź ilość"
-            required
+          <Form.Check
+            type="checkbox"
+            id="dostepnoscProduktu"
+            label="Dostępny"
+            checked={dostepnosc}
+            onChange={(e) => setDostepnosc(e.target.checked)}
           />
         </div>
 
@@ -189,46 +223,60 @@ function Admin({ produkty, setProdukty }) {
 }
 
 // Główna zawartość (karty)
-function Zawartosc({ produkty, setProdukty, isAdmin }) {
+function ProductList({ produkty, setProdukty, isAdmin, zamowienia, setZamowienia }) {
   return (
-    <Tabs
-      defaultActiveKey="produkty"
-      id="justify-tab-example"
-      className="mb-3"
-      justify
-    >
-      <Tab eventKey="produkty" title="Produkty" >
-        <Produkty produkty={produkty} setProdukty={setProdukty} isAdmin={isAdmin} />
+    <Tabs defaultActiveKey="produkty" id="justify-tab-example" className="mb-3" justify>
+      <Tab eventKey="produkty" title="Produkty">
+        <ProductCard
+          produkty={produkty}
+          setProdukty={setProdukty}
+          isAdmin={isAdmin}
+          zamowienia={zamowienia}
+          setZamowienia={setZamowienia}
+        />
       </Tab>
       <Tab eventKey="historia" title="Historia Zamówień">
-        <Historia />
+        <OrderHistory zamowienia={zamowienia} setZamowienia={setZamowienia} isAdmin={isAdmin} />
       </Tab>
       <Tab eventKey="admin" title="Panel Admina" disabled={!isAdmin}>
-        <Admin produkty={produkty} setProdukty={setProdukty} />
+        <AdminDashboard produkty={produkty} setProdukty={setProdukty} />
       </Tab>
     </Tabs>
   );
 }
 
-// Główna aplikacja
-function App() {
-  const [produkty, setProdukty] = useState([
-    { nazwa: 'Chleb', ilosc: 10, opis: 'Bochenki chleba zwykłego' },
-    { nazwa: 'Bułka', ilosc: 23, opis: 'Bułka wykorzystywana do robienia różnych rodzajów bułek' },
-    { nazwa: 'Bułka hotdogowa', ilosc: 30, opis: 'Bochenki chleba zwykłego' },
-    { nazwa: 'Ser żółty', ilosc: 20, opis: 'Liczone w paczkach, paczka zawiera 10 plasterków. Przydatny do robienia kanapek oraz bułek i tostów' },
-    { nazwa: 'Szynka', ilosc: 16, opis: 'Liczone w paczkach, paczka zawiera 12 plasterków. Przydatna do robienia kanapek oraz bułek i tostów' },
-    { nazwa: 'Parówka', ilosc: 28, opis: 'Pojedyncza parówka. Używa się jej do robienia hot-dogów' },
-  ]);
-
-  const [isAdmin, setIsAdmin] = useState(false);
-
+function Footer() {
   return (
-    <div>
-      <NavB setIsAdmin={setIsAdmin} />
-      <Zawartosc produkty={produkty} setProdukty={setProdukty} isAdmin={isAdmin} />
-    </div>
+    <footer className="bg-body-tertiary text-center py-3 mt-auto">
+      <p className="mb-0">Stronę przygotował Jakub Spendel</p>
+    </footer>
   );
 }
 
+
+// Główna aplikacja
+function App() {
+  const [produkty, setProdukty] = useState([
+    { nazwa: 'Chleb', opis: 'Bochenki chleba zwykłego', dostepnosc: 1 },
+    { nazwa: 'Bułka', opis: 'Bułka pszenna', dostepnosc: 1 },
+    { nazwa: 'Parówka', opis: 'Pojedyncza parówka do hot-dogów', dostepnosc: 0 },
+  ]);
+
+  const [zamowienia, setZamowienia] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  return (
+    <div className="d-flex flex-column min-vh-100">
+      <NavB isAdmin={isAdmin} setIsAdmin={setIsAdmin} />
+      <ProductList
+        produkty={produkty}
+        setProdukty={setProdukty}
+        isAdmin={isAdmin}
+        zamowienia={zamowienia}
+        setZamowienia={setZamowienia}
+      />
+      <Footer />
+    </div>
+  );
+}
 export default App;
