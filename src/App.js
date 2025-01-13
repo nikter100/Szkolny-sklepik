@@ -58,51 +58,68 @@ function NavB({ isAdmin, setIsAdmin }) {
 
 
 // Wyświetlanie produktów
-function ProductCard({ produkty, setProdukty, isAdmin, zamowienia, setZamowienia }) {
-  // Funkcja do zamawiania produktu
-  const zamowProdukt = (nazwaProduktu) => {
-    const noweZamowienie = { produkt: nazwaProduktu, status: 'Zamówione' };
+function ProductCard({ produkty, zamowienia, setZamowienia }) {
+  const [ilosc, setIlosc] = useState({});
+
+  const zamow = (produkt) => {
+    const zamowionaIlosc = ilosc[produkt.nazwa] || 1; // Domyślnie 1, jeśli użytkownik nie wybierze ilości
+    const noweZamowienie = {
+      nazwa: produkt.nazwa,
+      opis: produkt.opis,
+      ilosc: zamowionaIlosc,
+      status: 'Zamówione',
+    };
     setZamowienia([...zamowienia, noweZamowienie]);
+  };
+
+  const zmienIlosc = (produkt, value) => {
+    setIlosc((prev) => ({ ...prev, [produkt.nazwa]: value }));
   };
 
   return (
     <Container>
       <h2>Produkty:</h2>
-      <div className="row">
+      <div className="d-flex flex-wrap">
         {produkty.map((produkt, index) => (
-          <Card key={index} style={{ width: '20%' }} className="mx-3 mb-4">
+          <Card
+            key={index}
+            className="mb-3 mx-2"
+            style={{ width: '18rem', fontSize: '0.9rem' }}
+          >
             <Card.Body>
               <Card.Title>{produkt.nazwa}</Card.Title>
-              <Card.Text>{produkt.opis}</Card.Text>
+              <Card.Text style={{ fontSize: '0.8rem' }}>{produkt.opis}</Card.Text>
               <Card.Text>
-                <strong>Status:</strong>{' '}
-                {produkt.dostepnosc === 1 ? 'Produkt jest dostępny' : 'Produkt jest niedostępny'}
+                <strong>
+                  {produkt.dostepnosc ? 'Produkt dostępny' : 'Produkt niedostępny'}
+                </strong>
               </Card.Text>
-              <div>
-                {isAdmin && (
-                  <Form.Check
-                    type="checkbox"
-                    id={`dostepnosc-${index}`}
-                    label="Dostępny"
-                    checked={produkt.dostepnosc === 1}
-                    onChange={() =>
-                      setProdukty(
-                        produkty.map((p, i) =>
-                          i === index ? { ...p, dostepnosc: p.dostepnosc === 1 ? 0 : 1 } : p
-                        )
-                      )
+              {produkt.dostepnosc ? (
+                <div className="d-flex align-items-center">
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    defaultValue="1"
+                    className="form-control form-control-sm me-2"
+                    style={{ width: '4rem' }}
+                    onChange={(e) =>
+                      zmienIlosc(produkt, parseInt(e.target.value, 10))
                     }
                   />
-                )}
-              </div>
-              <Button
-                variant="success"
-                className="mt-2"
-                onClick={() => zamowProdukt(produkt.nazwa)}
-                disabled={produkt.dostepnosc === 0}
-              >
-                Zamów
-              </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => zamow(produkt)}
+                  >
+                    Zamów
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="secondary" size="sm" disabled>
+                  Niedostępne
+                </Button>
+              )}
             </Card.Body>
           </Card>
         ))}
@@ -111,49 +128,55 @@ function ProductCard({ produkty, setProdukty, isAdmin, zamowienia, setZamowienia
   );
 }
 
+
 // Sekcja Historia
 function OrderHistory({ zamowienia, setZamowienia, isAdmin }) {
   // Funkcja do zmiany statusu zamówienia
-  const zmienStatus = (index, nowyStatus) => {
+  const zmienStatus = (index, newStatus) => {
     const noweZamowienia = [...zamowienia];
-    noweZamowienia[index].status = nowyStatus;
+    noweZamowienia[index].status = newStatus;
     setZamowienia(noweZamowienia);
   };
 
   return (
-    <Container>
-      <h2>Zamówienia:</h2>
+    <div>
+      <h4>Zamówienia</h4>
       {zamowienia.length === 0 ? (
-        <p>Brak zamówień.</p>
+        <p>Nie złożono żadnych zamówień.</p>
       ) : (
-        zamowienia.map((zamowienie, index) => (
-          <Card key={index} className="mb-3">
-            <Card.Body>
-              <Card.Title>{zamowienie.produkt}</Card.Title>
-              <Card.Text>
-                <strong>Status:</strong>{' '}
-                {isAdmin ? (
-                  <Form.Select
-                    value={zamowienie.status}
-                    onChange={(e) => zmienStatus(index, e.target.value)}
-                  >
-                    <option value="Zamówione">Zamówione</option>
-                    <option value="W trakcie realizacji">W trakcie realizacji</option>
-                    <option value="Zrobione">Zrobione</option>
-                  </Form.Select>
-                ) : (
-                  zamowienie.status
-                )}
-              </Card.Text>
-            </Card.Body>
-          </Card>
-        ))
+        <ul className="list-group">
+          {zamowienia.map((zamowienie, index) => (
+            <li key={index} className="list-group-item">
+              <strong>{zamowienie.nazwa}</strong> - {zamowienie.opis}
+              <br />
+              <strong>Ilość:</strong> {zamowienie.ilosc}
+              <br />
+              <strong>Status:</strong>{' '}
+              {isAdmin ? (
+                <Form.Select
+                  value={zamowienie.status}
+                  onChange={(e) =>
+                    zmienStatus(index, e.target.value)
+                  }
+                >
+                  <option value="Zamówione">Zamówione</option>
+                  <option value="W trakcie realizacji">
+                    W trakcie realizacji
+                  </option>
+                  <option value="Zrobione">Zrobione</option>
+                </Form.Select>
+              ) : (
+                zamowienie.status
+              )}
+            </li>
+          ))}
+        </ul>
       )}
-    </Container>
+    </div>
   );
 }
 // Panel Admina
-function AdminDashboard({ produkty, setProdukty }) {
+function AdminDashBoard({ produkty, setProdukty }) {
   const [nazwa, setNazwa] = useState('');
   const [opis, setOpis] = useState('');
   const [dostepnosc, setDostepnosc] = useState(false);
@@ -225,22 +248,31 @@ function AdminDashboard({ produkty, setProdukty }) {
 // Główna zawartość (karty)
 function ProductList({ produkty, setProdukty, isAdmin, zamowienia, setZamowienia }) {
   return (
-    <Tabs defaultActiveKey="produkty" id="justify-tab-example" className="mb-3" justify>
+    <Tabs
+      defaultActiveKey="produkty"
+      id="justify-tab-example"
+      className="mb-3"
+      justify
+    >
       <Tab eventKey="produkty" title="Produkty">
         <ProductCard
           produkty={produkty}
-          setProdukty={setProdukty}
-          isAdmin={isAdmin}
           zamowienia={zamowienia}
           setZamowienia={setZamowienia}
         />
       </Tab>
-      <Tab eventKey="historia" title="Historia Zamówień">
-        <OrderHistory zamowienia={zamowienia} setZamowienia={setZamowienia} isAdmin={isAdmin} />
+      <Tab eventKey="zamowienia" title="Zamówienia">
+        <OrderHistory
+          zamowienia={zamowienia}
+          setZamowienia={setZamowienia}
+          isAdmin={isAdmin}
+        />
       </Tab>
-      <Tab eventKey="admin" title="Panel Admina" disabled={!isAdmin}>
-        <AdminDashboard produkty={produkty} setProdukty={setProdukty} />
-      </Tab>
+      {isAdmin && (
+        <Tab eventKey="admin" title="Panel Admina">
+          <AdminDashBoard produkty={produkty} setProdukty={setProdukty} />
+        </Tab>
+      )}
     </Tabs>
   );
 }
@@ -257,9 +289,12 @@ function Footer() {
 // Główna aplikacja
 function App() {
   const [produkty, setProdukty] = useState([
-    { nazwa: 'Chleb', opis: 'Bochenki chleba zwykłego', dostepnosc: 1 },
-    { nazwa: 'Bułka', opis: 'Bułka pszenna', dostepnosc: 1 },
-    { nazwa: 'Parówka', opis: 'Pojedyncza parówka do hot-dogów', dostepnosc: 0 },
+    { nazwa: 'Kanapka z szynką', opis: 'Świeżo przygotowana kanapka z pszennym pieczywem, plasterkami szynki i chrupiącą sałatą. Idealna na szybki lunch.', dostepnosc: 1 },
+    { nazwa: 'Kanapka z serem', opis: 'Klasyczna kanapka z delikatnym serem żółtym i kawałkami pomidora. Smaczna i pożywna.', dostepnosc: 1 },
+    { nazwa: 'Hot-dog klasyczny', opis: 'Ciepła bułka z parówką, dodatkiem ketchupu i musztardy. Szybka przekąska w każdej chwili.', dostepnosc: 0 },
+    { nazwa: 'Tost z serem i szynką', opis: 'Gorący tost z chrupiącym pieczywem, roztopionym serem i plasterkami szynki. Serwowany na ciepło.', dostepnosc: 1 },
+    { nazwa: 'Jogurt owocowy', opis: 'Naturalny jogurt z dodatkiem świeżych owoców sezonowych – truskawki, maliny i jagody.', dostepnosc: 0 },
+    { nazwa: 'Ciastko czekoladowe', opis: 'Miękkie ciastko z kawałkami czekolady, które rozpływa się w ustach. Doskonałe jako deser lub słodka przekąska.', dostepnosc: 1 }
   ]);
 
   const [zamowienia, setZamowienia] = useState([]);
