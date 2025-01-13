@@ -63,11 +63,14 @@ function ProductCard({ produkty, zamowienia, setZamowienia }) {
 
   const zamow = (produkt) => {
     const zamowionaIlosc = ilosc[produkt.nazwa] || 1; // Domyślnie 1, jeśli użytkownik nie wybierze ilości
+    const suma = (zamowionaIlosc * produkt.cena).toFixed(2);
+
     const noweZamowienie = {
       nazwa: produkt.nazwa,
       opis: produkt.opis,
       ilosc: zamowionaIlosc,
       status: 'Zamówione',
+      suma: suma,
     };
     setZamowienia([...zamowienia, noweZamowienie]);
   };
@@ -93,6 +96,9 @@ function ProductCard({ produkty, zamowienia, setZamowienia }) {
                 <strong>
                   {produkt.dostepnosc ? 'Produkt dostępny' : 'Produkt niedostępny'}
                 </strong>
+              </Card.Text>
+              <Card.Text>
+                <strong>Cena:</strong> {produkt.cena} zł
               </Card.Text>
               {produkt.dostepnosc ? (
                 <div className="d-flex align-items-center">
@@ -152,6 +158,9 @@ function OrderHistory({ zamowienia, setZamowienia, isAdmin }) {
               <strong>Ilość:</strong> {zamowienie.ilosc}
               <br />
               <strong>Status:</strong>{' '}
+              <br />
+              <strong>Suma:</strong> {zamowienie.suma} zł
+              <br />
               {isAdmin ? (
                 <Form.Select
                   value={zamowienie.status}
@@ -180,16 +189,18 @@ function AdminDashBoard({ produkty, setProdukty }) {
   const [nazwa, setNazwa] = useState('');
   const [opis, setOpis] = useState('');
   const [dostepnosc, setDostepnosc] = useState(false);
+  const [cena, setCena] = useState('');
 
   // Obsługa dodawania produktów
   const dodajProdukt = (e) => {
     e.preventDefault();
-    if (nazwa && opis) {
-      const nowyProdukt = { nazwa, opis, dostepnosc: dostepnosc ? 1 : 0 };
+    if (nazwa && opis && cena) {
+      const nowyProdukt = { nazwa, opis, dostepnosc: dostepnosc ? 1 : 0, cena};
       setProdukty([...produkty, nowyProdukt]);
       setNazwa('');
       setOpis('');
       setDostepnosc(false);
+      setCena('');
     }
   };
 
@@ -225,6 +236,22 @@ function AdminDashBoard({ produkty, setProdukty }) {
             rows="3"
             required
           ></textarea>
+        </div>
+        
+        <div className="mb-3">
+          <label htmlFor="cenaProduktu" className="form-label">
+            Cena (zł)
+          </label>
+          <input
+            type="number"
+            step="0.01" // Pozwala na wprowadzenie ceny z dwoma miejscami po przecinku
+            className="form-control"
+            id="cenaProduktu"
+            value={cena}
+            onChange={(e) => setCena(e.target.value)}
+            placeholder="Wprowadź cenę"
+            required
+          />
         </div>
 
         <div className="mb-3">
@@ -289,12 +316,12 @@ function Footer() {
 // Główna aplikacja
 function App() {
   const [produkty, setProdukty] = useState([
-    { nazwa: 'Kanapka z szynką', opis: 'Świeżo przygotowana kanapka z pszennym pieczywem, plasterkami szynki i chrupiącą sałatą. Idealna na szybki lunch.', dostepnosc: 1 },
-    { nazwa: 'Kanapka z serem', opis: 'Klasyczna kanapka z delikatnym serem żółtym i kawałkami pomidora. Smaczna i pożywna.', dostepnosc: 1 },
-    { nazwa: 'Hot-dog klasyczny', opis: 'Ciepła bułka z parówką, dodatkiem ketchupu i musztardy. Szybka przekąska w każdej chwili.', dostepnosc: 0 },
-    { nazwa: 'Tost z serem i szynką', opis: 'Gorący tost z chrupiącym pieczywem, roztopionym serem i plasterkami szynki. Serwowany na ciepło.', dostepnosc: 1 },
-    { nazwa: 'Jogurt owocowy', opis: 'Naturalny jogurt z dodatkiem świeżych owoców sezonowych – truskawki, maliny i jagody.', dostepnosc: 0 },
-    { nazwa: 'Ciastko czekoladowe', opis: 'Miękkie ciastko z kawałkami czekolady, które rozpływa się w ustach. Doskonałe jako deser lub słodka przekąska.', dostepnosc: 1 }
+    { nazwa: 'Kanapka z szynką', opis: 'Świeżo przygotowana kanapka z pszennym pieczywem, plasterkami szynki i chrupiącą sałatą. Idealna na szybki lunch.', cena: 2, dostepnosc: 1 },
+    { nazwa: 'Kanapka z serem', opis: 'Klasyczna kanapka z delikatnym serem żółtym i kawałkami pomidora. Smaczna i pożywna.', cena: 2.5 ,dostepnosc: 1 },
+    { nazwa: 'Hot-dog klasyczny', opis: 'Ciepła bułka z parówką, dodatkiem ketchupu i musztardy. Szybka przekąska w każdej chwili.', cena: 5, dostepnosc: 0 },
+    { nazwa: 'Tost z serem i szynką', opis: 'Gorący tost z chrupiącym pieczywem, roztopionym serem i plasterkami szynki. Serwowany na ciepło.',cena: 3.4, dostepnosc: 1 },
+    { nazwa: 'Jogurt owocowy', opis: 'Naturalny jogurt z dodatkiem świeżych owoców sezonowych – truskawki, maliny i jagody.', cena: 5.5, dostepnosc: 0 },
+    { nazwa: 'Ciastko czekoladowe', opis: 'Miękkie ciastko z kawałkami czekolady, które rozpływa się w ustach. Doskonałe jako deser lub słodka przekąska.', cena: 3.5, dostepnosc: 1 }
   ]);
 
   const [zamowienia, setZamowienia] = useState([]);
